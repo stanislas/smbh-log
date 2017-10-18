@@ -23,24 +23,26 @@
 ;;
 ;; In general, you should use the `info`, `warn`, etc variants as the `log` macros are considered low-level.
 ;;
-;; For each log level, we have 4 macros with slight different arities and behavior:
-;; 1. no-suffix: most common, 3 arities
+;; For each log level, we have 3 macros with slight different arities and behavior:
+;; 1. suffix `-c`:  3 arities
 ;;    i.   1 arg -> expects an exception created with `ex-info` and will use the data as context.
-;;    ii.  2 args -> ctx and msg : ctx is a map of keywords to values and is serialized as marker.
-;;    iii. 3 args -> ctx, msg and e : e is exception, if raise with `ex-info`, contributes to the ctx.
-;; 2. suffix `-cf`: ctx and formatting of message
-;; 3. suffix `-f`: formatting of message
-;; 4. suffix `-e`: for general exceptions (without context).
+;;    ii.  2 args -> expects an exception created with `ex-info` and will use the data as context.
+;;    iii. n args -> ctx, msg and arg : e is exception, if raise with `ex-info`, contributes to the ctx; msg with formatting
+;; 2. suffix `-f`: formatting of message no context
+;; 3. suffix `-e`: for exceptions with and without ctx works best with an exception created with `ex-info` : it will use
+;;                 the data as context.
 ;;
 ;; The spy macro allows to log a value being evaluated (as well as the original expression) and return the evaluated
 ;; value. The first argument is the keyword of the level (:info, :warn, etc...)
 
-(defmacro log
-  ([method e]
-   `(let [e#   (cast Throwable ~e)
-          ctx# (ex-data e#)
-          msg# (.getMessage ^Exception e#)]
-      (log ~method ctx# msg# e#)))
+(defmacro log-c
+  ([method ctx]
+   (if (resolve '⠇⠕⠶⠻)
+     `(. ^Logger ~'⠇⠕⠶⠻
+         (~method
+           (ClojureMapMarker. ~ctx)
+           ""))
+     (throw (IllegalStateException. "(deflogger) has not been called"))))
   ([method ctx msg]
    (if (resolve '⠇⠕⠶⠻)
      `(. ^Logger ~'⠇⠕⠶⠻
@@ -48,7 +50,74 @@
            (ClojureMapMarker. ~ctx)
            ~msg))
      (throw (IllegalStateException. "(deflogger) has not been called"))))
-  ([method ctx msg e]
+  ([method ctx msg & args]
+   (if (resolve '⠇⠕⠶⠻)
+     (case (count args)
+       0 `(. ^Logger ~'⠇⠕⠶⠻
+             (~method
+               (ClojureMapMarker. ~ctx)
+               ~msg))
+       1 `(. ^Logger ~'⠇⠕⠶⠻
+             (~method
+               (ClojureMapMarker. ~ctx)
+               ~msg
+               ~(first args)))
+       2 `(. ^Logger ~'⠇⠕⠶⠻
+             (~method
+               (ClojureMapMarker. ~ctx)
+               ~msg
+               ~(first args)
+               ~(second args)))
+       `(. ^Logger ~'⠇⠕⠶⠻
+           (~method
+             (ClojureMapMarker. ~ctx)
+             ~msg
+             (into-array [~@args]))))
+     (throw (IllegalStateException. "(deflogger) has not been called")))))
+
+(defmacro log-m [method msg & args]
+  (if (resolve '⠇⠕⠶⠻)
+    (case (count args)
+      0 `(. ^Logger ~'⠇⠕⠶⠻
+            (~method
+              ~msg))
+      1 `(. ^Logger ~'⠇⠕⠶⠻
+            (~method
+              ~msg
+              ~(first args)))
+      2 `(. ^Logger ~'⠇⠕⠶⠻
+            (~method
+              ~msg
+              ~(first args)
+              ~(second args)))
+      `(. ^Logger ~'⠇⠕⠶⠻
+          (~method
+            ~msg
+            (into-array [~@args]))))
+    (throw (IllegalStateException. "(deflogger) has not been called"))))
+
+(defmacro log-e
+  ([method e]
+   `(let [e#   (cast Throwable ~e)
+          ctx# (ex-data e#)
+          msg# (.getMessage ^Exception e#)]
+      (log-c ~method ctx# msg# e#)))
+  ([method e msg]
+   (if (resolve '⠇⠕⠶⠻)
+     `(let [e#   (cast Throwable ~e)
+            ctx# (ex-data e#)]
+        (if ctx#
+          (. ^Logger ~'⠇⠕⠶⠻
+             (~method
+               (ClojureMapMarker. ctx#)
+               ~msg
+               ^Throwable ~e))
+          (. ^Logger ~'⠇⠕⠶⠻
+             (~method
+               ~msg
+               ^Throwable ~e))))
+     (throw (IllegalStateException. "(deflogger) has not been called"))))
+  ([method e ctx msg]
    (if (resolve '⠇⠕⠶⠻)
      `(let [e#   (cast Throwable ~e)
             ctx# (ex-data e#)]
@@ -65,183 +134,120 @@
                ^Throwable ~e))))
      (throw (IllegalStateException. "(deflogger) has not been called")))))
 
-(defmacro log-cf [method ctx msg & args]
-  (if (resolve '⠇⠕⠶⠻)
-    (case (count args)
-      0 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              (ClojureMapMarker. ~ctx)
-              ~msg))
-      1 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              (ClojureMapMarker. ~ctx)
-              ~msg
-              ~(first args)))
-      2 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              (ClojureMapMarker. ~ctx)
-              ~msg
-              ~(first args)
-              ~(second args)))
-      `(. ^Logger ~'⠇⠕⠶⠻
-          (~method
-            (ClojureMapMarker. ~ctx)
-            ~msg
-            (into-array [~@args]))))
-    (throw (IllegalStateException. "(deflogger) has not been called"))))
-
-(defmacro log-f [method msg & args]
-  (if (resolve '⠇⠕⠶⠻)
-    (case (count args)
-      0 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg))
-      1 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg
-              ~(first args)))
-      2 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg
-              ~(first args)
-              ~(second args)))
-      `(. ^Logger ~'⠇⠕⠶⠻
-          (~method
-            ~msg
-            (into-array [~@args]))))
-    (throw (IllegalStateException. "(deflogger) has not been called"))))
-
-(defmacro log-e [method msg e]
-  (if (resolve '⠇⠕⠶⠻)
-    `(let [e#   (cast Throwable ~e)
-           ctx# (ex-data e#)]
-       (if ctx#
-         (. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              (ClojureMapMarker. ctx#)
-              ~msg
-              ^Throwable ~e))
-         (. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg
-              ^Throwable ~e))))
-    (throw (IllegalStateException. "(deflogger) has not been called"))))
-
 (defmacro spy
   ([val]
    `(spy :debug ~val))
   ([level val]
    (let [method (symbol (name level))]
      `(let [val# ~val]
-        (log ~method {:expression (delay
+        (log-c ~method {:expression (delay
                                     (str/trim (with-out-str
                                                 (pp/with-pprint-dispatch
                                                   pp/code-dispatch
                                                   (pp/pprint '~val)))))
-                      :value      val#}
-             "spy")
+                      :value        val#}
+               "spy")
         val#))))
 
-(defmacro trace
-  ([e]
-   `(log ~'trace ~e))
+
+(defmacro trace-c
+  ([ctx]
+   `(log-c ~'trace ~ctx))
   ([ctx msg]
-   `(log ~'trace ~ctx ~msg))
+   `(log-c ~'trace ~ctx ~msg))
   ([ctx msg e]
-   `(log ~'trace ~ctx ~msg ~e)))
+   `(log-c ~'trace ~ctx ~msg ~e)))
 
-(defmacro trace-cf [ctx msg & args]
-  `(log-cf ~'trace ~ctx ~msg ~@args))
-
-(defmacro trace-f [msg & args]
-  `(log-f ~'trace ~msg ~@args))
+(defmacro trace-m [msg & args]
+  `(log-m ~'trace ~msg ~@args))
 
 (defmacro trace-e
   ([e]
-   `(trace ~e))
-  ([msg e]
-   `(log-e ~'trace ~msg ~e)))
+   `(log-e ~'trace ~e))
+  ([e msg]
+   `(log-e ~'trace ~e ~msg))
+  ([e ctx msg]
+   `(log-e ~'trace ~e ~ctx ~msg)))
 
-(defmacro debug
-  ([e]
-   `(log ~'debug ~e))
+
+(defmacro debug-c
+  ([ctx]
+   `(log-c ~'debug ~ctx))
   ([ctx msg]
-   `(log ~'debug ~ctx ~msg))
+   `(log-c ~'debug ~ctx ~msg))
   ([ctx msg e]
-   `(log ~'debug ~ctx ~msg ~e)))
+   `(log-c ~'debug ~ctx ~msg ~e)))
 
-(defmacro debug-cf [ctx msg & args]
-  `(log-cf ~'debug ~ctx ~msg ~@args))
-
-(defmacro debug-f [msg & args]
-  `(log-f ~'debug ~msg ~@args))
+(defmacro debug-m [msg & args]
+  `(log-m ~'debug ~msg ~@args))
 
 (defmacro debug-e
   ([e]
-   `(debug ~e))
-  ([msg e]
-   `(log-e ~'debug ~msg ~e)))
+   `(log-e ~'debug ~e))
+  ([e msg]
+   `(log-e ~'debug ~e ~msg))
+  ([e ctx msg]
+   `(log-e ~'debug ~e ~ctx ~msg)))
 
-(defmacro info
-  ([e]
-   `(log ~'info ~e))
+
+(defmacro info-c
+  ([ctx]
+   `(log-c ~'info ~ctx))
   ([ctx msg]
-   `(log ~'info ~ctx ~msg))
+   `(log-c ~'info ~ctx ~msg))
   ([ctx msg e]
-   `(log ~'info ~ctx ~msg ~e)))
+   `(log-c ~'info ~ctx ~msg ~e)))
 
-(defmacro info-cf [ctx msg & args]
-  `(log-cf ~'info ~ctx ~msg ~@args))
-
-(defmacro info-f [msg & args]
-  `(log-f ~'info ~msg ~@args))
+(defmacro info-m [msg & args]
+  `(log-m ~'info ~msg ~@args))
 
 (defmacro info-e
   ([e]
-   `(info ~e))
-  ([msg e]
-   `(log-e ~'info ~msg ~e)))
+   `(log-e ~'info ~e))
+  ([e msg]
+   `(log-e ~'info ~e ~msg))
+  ([e ctx msg]
+   `(log-e ~'info ~e ~ctx ~msg)))
 
-(defmacro warn
-  ([e]
-   `(log ~'warn ~e))
+
+(defmacro warn-c
+  ([ctx]
+   `(log-c ~'warn ~ctx))
   ([ctx msg]
-   `(log ~'warn ~ctx ~msg))
+   `(log-c ~'warn ~ctx ~msg))
   ([ctx msg e]
-   `(log ~'warn ~ctx ~msg ~e)))
+   `(log-c ~'warn ~ctx ~msg ~e)))
 
-(defmacro warn-cf [ctx msg & args]
-  `(log-cf ~'warn ~ctx ~msg ~@args))
-
-(defmacro warn-f [msg & args]
-  `(log-f ~'warn ~msg ~@args))
+(defmacro warn-m [msg & args]
+  `(log-m ~'warn ~msg ~@args))
 
 (defmacro warn-e
   ([e]
-   `(warn ~e))
-  ([msg e]
-   `(log-e ~'warn ~msg ~e)))
+   `(log-e ~'warn ~e))
+  ([e msg]
+   `(log-e ~'warn ~e ~msg))
+  ([e ctx msg]
+   `(log-e ~'warn ~e ~ctx ~msg)))
 
-(defmacro error
-  ([e]
-   `(log ~'error ~e))
+
+(defmacro error-c
+  ([ctx]
+   `(log-c ~'error ~ctx))
   ([ctx msg]
-   `(log ~'error ~ctx ~msg))
+   `(log-c ~'error ~ctx ~msg))
   ([ctx msg e]
-   `(log ~'error ~ctx ~msg ~e)))
+   `(log-c ~'error ~ctx ~msg ~e)))
 
-(defmacro error-cf [ctx msg & args]
-  `(log-cf ~'error ~ctx ~msg ~@args))
-
-(defmacro error-f [msg & args]
-  `(log-f ~'error ~msg ~@args))
+(defmacro error-m [msg & args]
+  `(log-m ~'error ~msg ~@args))
 
 (defmacro error-e
   ([e]
-   `(error ~e))
-  ([msg e]
-   `(log-e ~'error ~msg ~e)))
-
+   `(log-e ~'error ~e))
+  ([e msg]
+   `(log-e ~'error ~e ~msg))
+  ([e ctx msg]
+   `(log-e ~'error ~e ~ctx ~msg)))
 
 ;; # MDC
 ;;

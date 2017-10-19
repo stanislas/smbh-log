@@ -293,7 +293,7 @@
     (MDC/remove key)))
 
 (defmacro with-mdc [ctx val-fn & body]
-  `(let [keys# (mdc-assocs! val-fn ~ctx)]
+  `(let [keys# (mdc-assocs! ~ctx ~val-fn)]
      (try
        ~@body
        (finally

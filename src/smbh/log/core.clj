@@ -283,7 +283,7 @@
   (persistent!
     (reduce-kv (fn [res k v]
                  (let [k2 (kw-str k)]
-                   (MDC/put k2 (json/encode v))
+                   (MDC/put k2 (val-fn v))
                    (conj! res k2)))
                (transient [])
                m)))

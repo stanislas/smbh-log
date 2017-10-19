@@ -3,9 +3,12 @@ package smbh.log;
 import clojure.java.api.Clojure;
 import clojure.lang.IDeref;
 import clojure.lang.IFn;
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import net.logstash.logback.argument.StructuredArgument;
 import net.logstash.logback.marker.LogstashMarker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -13,8 +16,11 @@ import java.util.Map;
 
 public class ClojureMapMarker extends LogstashMarker implements StructuredArgument {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClojureMapMarker.class);
+
     private static final IFn REQUIRE = Clojure.var("clojure.core", "require");
     private static final IFn NAME = Clojure.var("clojure.core", "name");
+    private static final IFn PR_STR = Clojure.var("clojure.core", "pr-str");
     private static final IFn GENERATE_STRING;
 
     static {
@@ -36,7 +42,12 @@ public class ClojureMapMarker extends LogstashMarker implements StructuredArgume
                 try {
                     generator.writeFieldName((String) NAME.invoke(k));
                     Object value = v instanceof IDeref ? ((IDeref) v).deref() : v;
-                    generator.writeRawValue((String) GENERATE_STRING.invoke(value));
+                    try {
+                        generator.writeRawValue((String) GENERATE_STRING.invoke(value));
+                    } catch (JsonGenerationException e) {
+                        LOGGER.warn("Serialization error", e);
+                        generator.writeString((String) PR_STR.invoke(value));
+                    }
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }

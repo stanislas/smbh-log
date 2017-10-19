@@ -7,7 +7,7 @@
                  [ch.qos.logback/logback-core "1.2.3"]
                  [cheshire "5.8.0"]
                  [net.logstash.logback/logstash-logback-encoder "4.11"]
-                 [org.clojure/clojure "1.9.0-beta2"]]
+                 [org.clojure/clojure "1.9.0-beta2" :scope "provided"]]
   :java-source-paths ["java"]
   :plugins [[org.clojars.cvillecsteele/lein-git-version "1.2.7"]
             [lein-ancient "0.6.10"]

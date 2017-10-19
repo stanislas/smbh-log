@@ -3,7 +3,6 @@ package smbh.log;
 import clojure.java.api.Clojure;
 import clojure.lang.IDeref;
 import clojure.lang.IFn;
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import net.logstash.logback.argument.StructuredArgument;
 import net.logstash.logback.marker.LogstashMarker;

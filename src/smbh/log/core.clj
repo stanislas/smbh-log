@@ -270,8 +270,8 @@
 (defn mdc-set! [ctx-copy]
   (MDC/setContextMap ctx-copy))
 
-(defn mdc-assoc! [key value]
-  (MDC/put (kw-str key) (json/encode value)))
+(defn mdc-assoc! [key ^String value]
+  (MDC/put (kw-str key) value))
 
 (defn mdc-dissoc! [key]
   (MDC/remove (kw-str key)))
@@ -279,7 +279,7 @@
 (defn mdc-get [key]
   (MDC/get (kw-str key)))
 
-(defn mdc-assocs! [m]
+(defn mdc-assocs! [m val-fn]
   (persistent!
     (reduce-kv (fn [res k v]
                  (let [k2 (kw-str k)]
@@ -292,14 +292,18 @@
   (doseq [^String key keys]
     (MDC/remove key)))
 
-(defmacro with-mdc [ctx & body]
-  `(let [keys# (mdc-assocs! ~ctx)]
+(defmacro with-mdc [ctx val-fn & body]
+  `(let [keys# (mdc-assocs! val-fn ~ctx)]
      (try
        ~@body
        (finally
          (mdc-dissocs! keys#)))))
 
-(defn wrap-mdc [handler ctx-fn]
+(defmacro with-mdc-str [ctx & body]
+  `(with-mdc ~ctx str ~@body))
+
+(defn wrap-mdc [handler {:keys [ctx-fn val-fn] :or {val-fn str}}]
   (fn [request]
     (with-mdc (ctx-fn request)
+              val-fn
               (handler request))))

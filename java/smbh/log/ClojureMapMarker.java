@@ -44,7 +44,7 @@ public class ClojureMapMarker extends LogstashMarker implements StructuredArgume
                     Object value = v instanceof IDeref ? ((IDeref) v).deref() : v;
                     try {
                         generator.writeRawValue((String) GENERATE_STRING.invoke(value));
-                    } catch (JsonGenerationException e) {
+                    } catch (Exception e) {
                         LOGGER.warn("Serialization error", e);
                         generator.writeString((String) PR_STR.invoke(value));
                     }
@@ -62,7 +62,12 @@ public class ClojureMapMarker extends LogstashMarker implements StructuredArgume
                 builder.append((String) NAME.invoke(k));
                 builder.append(" ");
                 Object value = v instanceof IDeref ? ((IDeref) v).deref() : v;
-                builder.append((String) GENERATE_STRING.invoke(value));
+                try {
+                    builder.append((String) GENERATE_STRING.invoke(value));
+                } catch (Exception e) {
+                    LOGGER.warn("Serialization error", e);
+                    builder.append((String) PR_STR.invoke(value));
+                }
                 builder.append(", ");
             });
         }

@@ -1,10 +1,12 @@
 (ns ^{:author "Stanislas Nanchen"
       :doc    "smbh.log is a simple wrapper on logback (slf4j) and net.logstash.logback.
 
-               To use the library, it is necessary to call the macro `deflogger` before any logging macro is called.
+               To use the library, it is necessary to call the macro `deflogger`
+               before any logging macro is called.
 
-               It has some utilities to manipulate the MDC (`with`-style macro and ring middleware)."}
-  smbh.log.core
+               It has some utilities to manipulate the MDC
+               (`with`-style macro and ring middleware)."}
+smbh.log.core
   (:require [cheshire.core :as json]
             [clojure.pprint :as pp]
             [clojure.string :as str])
@@ -16,8 +18,9 @@
 
 ;; Install a var called `⠇⠕⠶⠻` in the namespace from which it is called.
 ;; The name is logger in braille-2 notation."
-(defmacro deflogger []
-  `(defonce ~'⠇⠕⠶⠻ (LoggerFactory/getLogger ~(.toString *ns*))))
+(defmacro init-logger []
+  `(if-not ~(resolve '⠇⠕⠶⠻)
+     (defonce ~'⠇⠕⠶⠻ (LoggerFactory/getLogger ~(.toString *ns*)))))
 
 ;; # Logging macros
 ;;
@@ -37,64 +40,58 @@
 
 (defmacro log-c
   ([method ctx]
-   (if (resolve '⠇⠕⠶⠻)
-     `(. ^Logger ~'⠇⠕⠶⠻
-         (~method
-           (ClojureMapMarker. ~ctx)
-           ""))
-     (throw (IllegalStateException. "(deflogger) has not been called"))))
+   `(do (init-logger)
+        (. ^Logger ~'⠇⠕⠶⠻
+           (~method (ClojureMapMarker. ~ctx) ""))))
   ([method ctx msg]
-   (if (resolve '⠇⠕⠶⠻)
-     `(. ^Logger ~'⠇⠕⠶⠻
-         (~method
-           (ClojureMapMarker. ~ctx)
-           ~msg))
-     (throw (IllegalStateException. "(deflogger) has not been called"))))
-  ([method ctx msg & args]
-   (if (resolve '⠇⠕⠶⠻)
-     (case (count args)
-       0 `(. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ~ctx)
-               ~msg))
-       1 `(. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ~ctx)
-               ~msg
-               ~(first args)))
-       2 `(. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ~ctx)
-               ~msg
-               ~(first args)
-               ~(second args)))
-       `(. ^Logger ~'⠇⠕⠶⠻
+   `(do (init-logger)
+        (. ^Logger ~'⠇⠕⠶⠻
            (~method
              (ClojureMapMarker. ~ctx)
-             ~msg
-             (into-array [~@args]))))
-     (throw (IllegalStateException. "(deflogger) has not been called")))))
+             ~msg))))
+  ([method ctx msg & args]
+   `(do (init-logger)
+        ~(case (count args)
+           0 `(. ^Logger ~'⠇⠕⠶⠻
+                 (~method
+                   (ClojureMapMarker. ~ctx)
+                   ~msg))
+           1 `(. ^Logger ~'⠇⠕⠶⠻
+                 (~method
+                   (ClojureMapMarker. ~ctx)
+                   ~msg
+                   ~(first args)))
+           2 `(. ^Logger ~'⠇⠕⠶⠻
+                 (~method
+                   (ClojureMapMarker. ~ctx)
+                   ~msg
+                   ~(first args)
+                   ~(second args)))
+           `(. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. ~ctx)
+                 ~msg
+                 (into-array [~@args])))))))
 
 (defmacro log-m [method msg & args]
-  (if (resolve '⠇⠕⠶⠻)
-    (case (count args)
-      0 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg))
-      1 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg
-              ~(first args)))
-      2 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg
-              ~(first args)
-              ~(second args)))
-      `(. ^Logger ~'⠇⠕⠶⠻
-          (~method
-            ~msg
-            (into-array [~@args]))))
-    (throw (IllegalStateException. "(deflogger) has not been called"))))
+  `(do (init-logger)
+       ~(case (count args)
+          0 `(. ^Logger ~'⠇⠕⠶⠻
+                (~method
+                  ~msg))
+          1 `(. ^Logger ~'⠇⠕⠶⠻
+                (~method
+                  ~msg
+                  ~(first args)))
+          2 `(. ^Logger ~'⠇⠕⠶⠻
+                (~method
+                  ~msg
+                  ~(first args)
+                  ~(second args)))
+          `(. ^Logger ~'⠇⠕⠶⠻
+              (~method
+                ~msg
+                (into-array [~@args]))))))
 
 (defmacro log-e
   ([method e]
@@ -103,36 +100,34 @@
           msg# (.getMessage ^Exception e#)]
       (log-c ~method ctx# msg# e#)))
   ([method e msg]
-   (if (resolve '⠇⠕⠶⠻)
-     `(let [e#   (cast Throwable ~e)
-            ctx# (ex-data e#)]
-        (if ctx#
-          (. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ctx#)
-               ~msg
-               ^Throwable ~e))
-          (. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               ~msg
-               ^Throwable ~e))))
-     (throw (IllegalStateException. "(deflogger) has not been called"))))
+   `(do (init-logger)
+        (let [e#   (cast Throwable ~e)
+              ctx# (ex-data e#)]
+          (if ctx#
+            (. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. ctx#)
+                 ~msg
+                 ^Throwable ~e))
+            (. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 ~msg
+                 ^Throwable ~e))))))
   ([method e ctx msg]
-   (if (resolve '⠇⠕⠶⠻)
-     `(let [e#   (cast Throwable ~e)
-            ctx# (ex-data e#)]
-        (if ctx#
-          (. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. (into ctx# ~ctx))
-               ~msg
-               ^Throwable ~e))
-          (. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ~ctx)
-               ~msg
-               ^Throwable ~e))))
-     (throw (IllegalStateException. "(deflogger) has not been called")))))
+   `(do (init-logger)
+        (let [e#   (cast Throwable ~e)
+              ctx# (ex-data e#)]
+          (if ctx#
+            (. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. (into ctx# ~ctx))
+                 ~msg
+                 ^Throwable ~e))
+            (. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. ~ctx)
+                 ~msg
+                 ^Throwable ~e)))))))
 
 (defmacro spy
   ([val]
@@ -141,11 +136,11 @@
    (let [method (symbol (name level))]
      `(let [val# ~val]
         (log-c ~method {:expression (delay
-                                    (str/trim (with-out-str
-                                                (pp/with-pprint-dispatch
-                                                  pp/code-dispatch
-                                                  (pp/pprint '~val)))))
-                      :value        val#}
+                                      (str/trim (with-out-str
+                                                  (pp/with-pprint-dispatch
+                                                    pp/code-dispatch
+                                                    (pp/pprint '~val)))))
+                        :value      val#}
                "spy")
         val#))))
 

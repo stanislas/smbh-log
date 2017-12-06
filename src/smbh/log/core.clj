@@ -31,7 +31,7 @@ smbh.log.core
 ;;    i.   1 arg -> expects an exception created with `ex-info` and will use the data as context.
 ;;    ii.  2 args -> expects an exception created with `ex-info` and will use the data as context.
 ;;    iii. n args -> ctx, msg and arg : e is exception, if raise with `ex-info`, contributes to the ctx; msg with formatting
-;; 2. suffix `-f`: formatting of message no context
+;; 2. suffix `-m`: formatting of message no context
 ;; 3. suffix `-e`: for exceptions with and without ctx works best with an exception created with `ex-info` : it will use
 ;;                 the data as context.
 ;;

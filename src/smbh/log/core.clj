@@ -74,7 +74,7 @@ smbh.log.core
                (~method
                  (ClojureMapMarker. ~ctx)
                  ~msg
-                 (into-array [~@args])))))))
+                 (into-array Object [~@args])))))))
 
 (defmacro log-m [method msg & args]
   `(do ~(init-logger)
@@ -94,7 +94,7 @@ smbh.log.core
           `(. ^Logger ~'⠇⠕⠶⠻
               (~method
                 ~msg
-                (into-array [~@args]))))))
+                (into-array Object [~@args]))))))
 
 (defmacro log-e
   ([method e]

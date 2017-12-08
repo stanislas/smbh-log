@@ -1,10 +1,12 @@
 (ns ^{:author "Stanislas Nanchen"
       :doc    "smbh.log is a simple wrapper on logback (slf4j) and net.logstash.logback.
 
-               To use the library, it is necessary to call the macro `deflogger` before any logging macro is called.
+               To use the library, it is necessary to call the macro `deflogger`
+               before any logging macro is called.
 
-               It has some utilities to manipulate the MDC (`with`-style macro and ring middleware)."}
-  smbh.log.core
+               It has some utilities to manipulate the MDC
+               (`with`-style macro and ring middleware)."}
+smbh.log.core
   (:require [cheshire.core :as json]
             [clojure.pprint :as pp]
             [clojure.string :as str])
@@ -16,85 +18,83 @@
 
 ;; Install a var called `⠇⠕⠶⠻` in the namespace from which it is called.
 ;; The name is logger in braille-2 notation."
-(defmacro deflogger []
-  `(defonce ~'⠇⠕⠶⠻ (LoggerFactory/getLogger ~(.toString *ns*))))
+(defmacro init-logger []
+  (if-not (resolve '⠇⠕⠶⠻)
+    `(defonce ~'⠇⠕⠶⠻ (LoggerFactory/getLogger ~(.toString *ns*)))))
 
 ;; # Logging macros
 ;;
-;; In general, you should use the `info`, `warn`, etc variants as the `log` macros are considered low-level.
+;; In general, you should use the `info`, `warn`, etc variants 
+;; as the `log` macros are considered low-level.
 ;;
 ;; For each log level, we have 3 macros with slight different arities and behavior:
 ;; 1. suffix `-c`:  3 arities
 ;;    i.   1 arg -> expects an exception created with `ex-info` and will use the data as context.
 ;;    ii.  2 args -> expects an exception created with `ex-info` and will use the data as context.
-;;    iii. n args -> ctx, msg and arg : e is exception, if raise with `ex-info`, contributes to the ctx; msg with formatting
-;; 2. suffix `-f`: formatting of message no context
-;; 3. suffix `-e`: for exceptions with and without ctx works best with an exception created with `ex-info` : it will use
-;;                 the data as context.
+;;    iii. n args -> ctx, msg and arg : e is exception, if raise with `ex-info`, 
+;;                   contributes to the ctx; msg with formatting
+;; 2. suffix `-m`: formatting of message no context
+;; 3. suffix `-e`: for exceptions with and without ctx works best with an exception 
+;;                 created with `ex-info` : it will use the data as context.
 ;;
-;; The spy macro allows to log a value being evaluated (as well as the original expression) and return the evaluated
-;; value. The first argument is the keyword of the level (:info, :warn, etc...)
+;; The spy macro allows to log a value being evaluated (as well as the original expression) 
+;; and return the evaluated value. The first argument is the keyword of the level 
+;; (:info, :warn, etc...)
 
 (defmacro log-c
   ([method ctx]
-   (if (resolve '⠇⠕⠶⠻)
-     `(. ^Logger ~'⠇⠕⠶⠻
-         (~method
-           (ClojureMapMarker. ~ctx)
-           ""))
-     (throw (IllegalStateException. "(deflogger) has not been called"))))
+   (do (init-logger)
+       `(. ^Logger ~'⠇⠕⠶⠻
+           (~method (ClojureMapMarker. ~ctx) ""))))
   ([method ctx msg]
-   (if (resolve '⠇⠕⠶⠻)
-     `(. ^Logger ~'⠇⠕⠶⠻
-         (~method
-           (ClojureMapMarker. ~ctx)
-           ~msg))
-     (throw (IllegalStateException. "(deflogger) has not been called"))))
-  ([method ctx msg & args]
-   (if (resolve '⠇⠕⠶⠻)
-     (case (count args)
-       0 `(. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ~ctx)
-               ~msg))
-       1 `(. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ~ctx)
-               ~msg
-               ~(first args)))
-       2 `(. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ~ctx)
-               ~msg
-               ~(first args)
-               ~(second args)))
+   (do (init-logger)
        `(. ^Logger ~'⠇⠕⠶⠻
            (~method
              (ClojureMapMarker. ~ctx)
-             ~msg
-             (into-array [~@args]))))
-     (throw (IllegalStateException. "(deflogger) has not been called")))))
+             ~msg))))
+  ([method ctx msg & args]
+   (do (init-logger)
+       (case (count args)
+         0 `(. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. ~ctx)
+                 ~msg))
+         1 `(. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. ~ctx)
+                 ~msg
+                 ~(first args)))
+         2 `(. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. ~ctx)
+                 ~msg
+                 ~(first args)
+                 ~(second args)))
+         `(. ^Logger ~'⠇⠕⠶⠻
+             (~method
+               (ClojureMapMarker. ~ctx)
+               ~msg
+               (into-array [~@args])))))))
 
 (defmacro log-m [method msg & args]
-  (if (resolve '⠇⠕⠶⠻)
-    (case (count args)
-      0 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg))
-      1 `(. ^Logger ~'⠇⠕⠶⠻
+  (do (init-logger)
+      (case (count args)
+        0 `(. ^Logger ~'⠇⠕⠶⠻
+              (~method
+                ~msg))
+        1 `(. ^Logger ~'⠇⠕⠶⠻
+              (~method
+                ~msg
+                ~(first args)))
+        2 `(. ^Logger ~'⠇⠕⠶⠻
+              (~method
+                ~msg
+                ~(first args)
+                ~(second args)))
+        `(. ^Logger ~'⠇⠕⠶⠻
             (~method
               ~msg
-              ~(first args)))
-      2 `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg
-              ~(first args)
-              ~(second args)))
-      `(. ^Logger ~'⠇⠕⠶⠻
-          (~method
-            ~msg
-            (into-array [~@args]))))
-    (throw (IllegalStateException. "(deflogger) has not been called"))))
+              (into-array [~@args]))))))
 
 (defmacro log-e
   ([method e]
@@ -103,36 +103,34 @@
           msg# (.getMessage ^Exception e#)]
       (log-c ~method ctx# msg# e#)))
   ([method e msg]
-   (if (resolve '⠇⠕⠶⠻)
-     `(let [e#   (cast Throwable ~e)
-            ctx# (ex-data e#)]
-        (if ctx#
-          (. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ctx#)
-               ~msg
-               ^Throwable ~e))
-          (. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               ~msg
-               ^Throwable ~e))))
-     (throw (IllegalStateException. "(deflogger) has not been called"))))
+   (do (init-logger)
+       `(let [e#   (cast Throwable ~e)
+              ctx# (ex-data e#)]
+          (if ctx#
+            (. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. ctx#)
+                 ~msg
+                 ^Throwable ~e))
+            (. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 ~msg
+                 ^Throwable ~e))))))
   ([method e ctx msg]
-   (if (resolve '⠇⠕⠶⠻)
-     `(let [e#   (cast Throwable ~e)
-            ctx# (ex-data e#)]
-        (if ctx#
-          (. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. (into ctx# ~ctx))
-               ~msg
-               ^Throwable ~e))
-          (. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ~ctx)
-               ~msg
-               ^Throwable ~e))))
-     (throw (IllegalStateException. "(deflogger) has not been called")))))
+   (do (init-logger)
+       `(let [e#   (cast Throwable ~e)
+              ctx# (ex-data e#)]
+          (if ctx#
+            (. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. (into ctx# ~ctx))
+                 ~msg
+                 ^Throwable ~e))
+            (. ^Logger ~'⠇⠕⠶⠻
+               (~method
+                 (ClojureMapMarker. ~ctx)
+                 ~msg
+                 ^Throwable ~e)))))))
 
 (defmacro spy
   ([val]
@@ -141,11 +139,11 @@
    (let [method (symbol (name level))]
      `(let [val# ~val]
         (log-c ~method {:expression (delay
-                                    (str/trim (with-out-str
-                                                (pp/with-pprint-dispatch
-                                                  pp/code-dispatch
-                                                  (pp/pprint '~val)))))
-                      :value        val#}
+                                      (str/trim (with-out-str
+                                                  (pp/with-pprint-dispatch
+                                                    pp/code-dispatch
+                                                    (pp/pprint '~val)))))
+                        :value      val#}
                "spy")
         val#))))
 
@@ -251,15 +249,15 @@
 
 ;; # MDC
 ;;
-;; With the MDC, it is possible to register some key/values that are added to every log entry of the current thread.
-;; (eg. user_id, request_id).
+;; With the MDC, it is possible to register some key/values that are added to every log entry 
+;; of the current thread (eg. user_id, request_id).
 ;;
 ;; Most usefull are the following functions/macros
-;; - `with-mdc`, a macro to add some context (given as map) to the MDC, evaluate a body and remove the given context
-;;               after execution of the body
-;; - `wrap-mdc`, a ring middleware that takes a handler and a context creation function; this function is applied to
-;;               the ring request and must return a context that will be added to the MDC for the duration of the
-;;               handler.
+;; - `with-mdc`, a macro to add some context (given as map) to the MDC, evaluate a body 
+;;               and remove the given context after execution of the body
+;; - `wrap-mdc`, a ring middleware that takes a handler and a context creation function; 
+;;               this function is applied to the ring request and must return a context 
+;;               that will be added to the MDC for the duration of the handler.
 
 (defn kw-str [^Keyword kw]
   (String/valueOf (.-sym kw)))

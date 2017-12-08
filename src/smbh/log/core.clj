@@ -18,7 +18,7 @@ smbh.log.core
 
 ;; Install a var called `⠇⠕⠶⠻` in the namespace from which it is called.
 ;; The name is logger in braille-2 notation."
-(defmacro init-logger []
+(defn init-logger []
   (if-not (resolve '⠇⠕⠶⠻)
     `(defonce ~'⠇⠕⠶⠻ (LoggerFactory/getLogger ~(.toString *ns*)))))
 
@@ -43,58 +43,58 @@ smbh.log.core
 
 (defmacro log-c
   ([method ctx]
-   (do (init-logger)
-       `(. ^Logger ~'⠇⠕⠶⠻
+   `(do ~(init-logger)
+        (. ^Logger ~'⠇⠕⠶⠻
            (~method (ClojureMapMarker. ~ctx) ""))))
   ([method ctx msg]
-   (do (init-logger)
-       `(. ^Logger ~'⠇⠕⠶⠻
+   `(do ~(init-logger)
+        (. ^Logger ~'⠇⠕⠶⠻
            (~method
              (ClojureMapMarker. ~ctx)
              ~msg))))
   ([method ctx msg & args]
-   (do (init-logger)
-       (case (count args)
-         0 `(. ^Logger ~'⠇⠕⠶⠻
-               (~method
-                 (ClojureMapMarker. ~ctx)
-                 ~msg))
-         1 `(. ^Logger ~'⠇⠕⠶⠻
+   `(do ~(init-logger)
+        ~(case (count args)
+           0 `(. ^Logger ~'⠇⠕⠶⠻
+                 (~method
+                   (ClojureMapMarker. ~ctx)
+                   ~msg))
+           1 `(. ^Logger ~'⠇⠕⠶⠻
+                 (~method
+                   (ClojureMapMarker. ~ctx)
+                   ~msg
+                   ~(first args)))
+           2 `(. ^Logger ~'⠇⠕⠶⠻
+                 (~method
+                   (ClojureMapMarker. ~ctx)
+                   ~msg
+                   ~(first args)
+                   ~(second args)))
+           `(. ^Logger ~'⠇⠕⠶⠻
                (~method
                  (ClojureMapMarker. ~ctx)
                  ~msg
-                 ~(first args)))
-         2 `(. ^Logger ~'⠇⠕⠶⠻
-               (~method
-                 (ClojureMapMarker. ~ctx)
-                 ~msg
-                 ~(first args)
-                 ~(second args)))
-         `(. ^Logger ~'⠇⠕⠶⠻
-             (~method
-               (ClojureMapMarker. ~ctx)
-               ~msg
-               (into-array [~@args])))))))
+                 (into-array [~@args])))))))
 
 (defmacro log-m [method msg & args]
-  (do (init-logger)
-      (case (count args)
-        0 `(. ^Logger ~'⠇⠕⠶⠻
-              (~method
-                ~msg))
-        1 `(. ^Logger ~'⠇⠕⠶⠻
+  `(do ~(init-logger)
+       ~(case (count args)
+          0 `(. ^Logger ~'⠇⠕⠶⠻
+                (~method
+                  ~msg))
+          1 `(. ^Logger ~'⠇⠕⠶⠻
+                (~method
+                  ~msg
+                  ~(first args)))
+          2 `(. ^Logger ~'⠇⠕⠶⠻
+                (~method
+                  ~msg
+                  ~(first args)
+                  ~(second args)))
+          `(. ^Logger ~'⠇⠕⠶⠻
               (~method
                 ~msg
-                ~(first args)))
-        2 `(. ^Logger ~'⠇⠕⠶⠻
-              (~method
-                ~msg
-                ~(first args)
-                ~(second args)))
-        `(. ^Logger ~'⠇⠕⠶⠻
-            (~method
-              ~msg
-              (into-array [~@args]))))))
+                (into-array [~@args]))))))
 
 (defmacro log-e
   ([method e]
@@ -103,8 +103,8 @@ smbh.log.core
           msg# (.getMessage ^Exception e#)]
       (log-c ~method ctx# msg# e#)))
   ([method e msg]
-   (do (init-logger)
-       `(let [e#   (cast Throwable ~e)
+   `(do ~(init-logger)
+        (let [e#   (cast Throwable ~e)
               ctx# (ex-data e#)]
           (if ctx#
             (. ^Logger ~'⠇⠕⠶⠻
@@ -117,8 +117,8 @@ smbh.log.core
                  ~msg
                  ^Throwable ~e))))))
   ([method e ctx msg]
-   (do (init-logger)
-       `(let [e#   (cast Throwable ~e)
+   `(do ~(init-logger)
+        (let [e#   (cast Throwable ~e)
               ctx# (ex-data e#)]
           (if ctx#
             (. ^Logger ~'⠇⠕⠶⠻

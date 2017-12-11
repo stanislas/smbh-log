@@ -79,22 +79,22 @@ smbh.log.core
 (defmacro log-m [method msg & args]
   (init-logger)
   (case (count args)
-     0 `(. ^Logger ~'⠇⠕⠶⠻
-           (~method
-             ~msg))
-     1 `(. ^Logger ~'⠇⠕⠶⠻
-           (~method
-             ~msg
-             ~(first args)))
-     2 `(. ^Logger ~'⠇⠕⠶⠻
-           (~method
-             ~msg
-             ~(first args)
-             ~(second args)))
-     `(. ^Logger ~'⠇⠕⠶⠻
-         (~method
-           ~msg
-           (into-array Object [~@args])))))
+    0 `(. ^Logger ~'⠇⠕⠶⠻
+          (~method
+            ~msg))
+    1 `(. ^Logger ~'⠇⠕⠶⠻
+          (~method
+            ~msg
+            ~(first args)))
+    2 `(. ^Logger ~'⠇⠕⠶⠻
+          (~method
+            ~msg
+            ~(first args)
+            ~(second args)))
+    `(. ^Logger ~'⠇⠕⠶⠻
+        (~method
+          ~msg
+          (into-array Object [~@args])))))
 
 (defmacro log-e
   ([method e]
@@ -104,33 +104,34 @@ smbh.log.core
       (log-c ~method ctx# msg# e#)))
   ([method e msg]
    (init-logger)
-   `(let [e#   (cast Throwable ~e)
-          ctx# (ex-data e#)]
-      (if ctx#
+   `(let [e#     (cast Throwable ~e)
+          e-ctx# (ex-data e#)]
+      (if e-ctx#
+        (. ^Logger ~'⠇⠕⠶⠻
+           (~method
+             (ClojureMapMarker. e-ctx#)
+             ~msg
+             ^Throwable e#))
+        (. ^Logger ~'⠇⠕⠶⠻
+           (~method
+             ~msg
+             ^Throwable e#)))))
+  ([method e ctx msg]
+   (init-logger)
+   `(let [e#     (cast Throwable ~e)
+          e-ctx# (ex-data e#)
+          ctx#   ~ctx]
+      (if e-ctx#
+        (. ^Logger ~'⠇⠕⠶⠻
+           (~method
+             (ClojureMapMarker. (into e-ctx# ctx#))
+             ~msg
+             ^Throwable e#))
         (. ^Logger ~'⠇⠕⠶⠻
            (~method
              (ClojureMapMarker. ctx#)
              ~msg
-             ^Throwable ~e))
-        (. ^Logger ~'⠇⠕⠶⠻
-           (~method
-             ~msg
-             ^Throwable ~e)))))
-  ([method e ctx msg]
-   (init-logger)
-   `(let [e#   (cast Throwable ~e)
-          ctx# (ex-data e#)]
-      (if ctx#
-        (. ^Logger ~'⠇⠕⠶⠻
-           (~method
-             (ClojureMapMarker. (into ctx# ~ctx))
-             ~msg
-             ^Throwable ~e))
-        (. ^Logger ~'⠇⠕⠶⠻
-           (~method
-             (ClojureMapMarker. ~ctx)
-             ~msg
-             ^Throwable ~e))))))
+             ^Throwable e#))))))
 
 (defmacro spy
   ([val]
@@ -153,8 +154,8 @@ smbh.log.core
    `(log-c ~'trace ~ctx))
   ([ctx msg]
    `(log-c ~'trace ~ctx ~msg))
-  ([ctx msg e]
-   `(log-c ~'trace ~ctx ~msg ~e)))
+  ([ctx msg & args]
+   `(log-c ~'trace ~ctx ~msg ~@args)))
 
 (defmacro trace-m [msg & args]
   `(log-m ~'trace ~msg ~@args))
@@ -173,8 +174,8 @@ smbh.log.core
    `(log-c ~'debug ~ctx))
   ([ctx msg]
    `(log-c ~'debug ~ctx ~msg))
-  ([ctx msg e]
-   `(log-c ~'debug ~ctx ~msg ~e)))
+  ([ctx msg & args]
+   `(log-c ~'debug ~ctx ~msg ~@args)))
 
 (defmacro debug-m [msg & args]
   `(log-m ~'debug ~msg ~@args))
@@ -193,8 +194,8 @@ smbh.log.core
    `(log-c ~'info ~ctx))
   ([ctx msg]
    `(log-c ~'info ~ctx ~msg))
-  ([ctx msg e]
-   `(log-c ~'info ~ctx ~msg ~e)))
+  ([ctx msg & args]
+   `(log-c ~'info ~ctx ~msg ~@args)))
 
 (defmacro info-m [msg & args]
   `(log-m ~'info ~msg ~@args))
@@ -213,8 +214,8 @@ smbh.log.core
    `(log-c ~'warn ~ctx))
   ([ctx msg]
    `(log-c ~'warn ~ctx ~msg))
-  ([ctx msg e]
-   `(log-c ~'warn ~ctx ~msg ~e)))
+  ([ctx msg & args]
+   `(log-c ~'warn ~ctx ~msg ~@args)))
 
 (defmacro warn-m [msg & args]
   `(log-m ~'warn ~msg ~@args))
@@ -233,8 +234,8 @@ smbh.log.core
    `(log-c ~'error ~ctx))
   ([ctx msg]
    `(log-c ~'error ~ctx ~msg))
-  ([ctx msg e]
-   `(log-c ~'error ~ctx ~msg ~e)))
+  ([ctx msg & args]
+   `(log-c ~'error ~ctx ~msg ~@args)))
 
 (defmacro error-m [msg & args]
   `(log-m ~'error ~msg ~@args))

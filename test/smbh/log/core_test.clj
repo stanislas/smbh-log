@@ -2,6 +2,8 @@
   (:require [clojure.test :refer :all]
             [smbh.log.core :as log]))
 
+(log/deflogger)
+
 (deftest trace-logs
   (is (not (log/trace-c {})))
   (is (not (log/trace-c {} "hello")))

@@ -20,7 +20,7 @@ smbh.log.core
 ;; The name is logger in braille-2 notation."
 (defn init-logger []
   (if-not (resolve '⠇⠕⠶⠻)
-    (eval `(defonce ~'⠇⠕⠶⠻ (LoggerFactory/getLogger ~(.toString *ns*))))))
+    (intern *ns* '⠇⠕⠶⠻ (LoggerFactory/getLogger (.toString *ns*)))))
 
 ;; # Logging macros
 ;;

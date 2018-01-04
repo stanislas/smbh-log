@@ -9,6 +9,7 @@
 	<!-- libraries -->
 	<logger name="ch.qos.logback.classic" level="WARN"/>
 	<logger name="org.apache.http" level="WARN"/>
+	<logger name="smbh.log" level="INFO"/>
 
 	<root level="INFO">
 		<appender-ref ref="STDOUT"/>

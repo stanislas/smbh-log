@@ -1,8 +1,14 @@
 (ns smbh.log.core-test
   (:require [clojure.test :refer :all]
-            [smbh.log.core :as log]))
+            [smbh.log.core :as log])
+  (:import [org.slf4j Logger]))
 
 (log/deflogger)
+
+(set! *warn-on-reflection* true)
+
+(deftest proper-meta
+  (is (= Logger (:tag (meta #'⠇⠕⠶⠻)))))
 
 (deftest trace-logs
   (is (not (log/trace-c {})))

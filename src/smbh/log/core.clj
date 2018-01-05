@@ -10,16 +10,15 @@ smbh.log.core
   (:require [cheshire.core :as json]
             [clojure.pprint :as pp]
             [clojure.string :as str])
-  (:import [clojure.lang Keyword]
-           [org.slf4j LoggerFactory Logger MDC]
-           [smbh.log ClojureMapMarker]))
+  (:import [org.slf4j LoggerFactory Logger]
+           [smbh.log ClojureMapMarker Identity]))
 
 ;; # Logger definition
 
 ;; Install a var called `⠇⠕⠶⠻` in the namespace from which it is called.
 ;; The name is logger in braille-2 notation."
 (defmacro deflogger []
-  `(defonce ~'⠇⠕⠶⠻ (LoggerFactory/getLogger ~(.toString *ns*))))
+  `(defonce ~(vary-meta '⠇⠕⠶⠻ assoc :tag Logger) (LoggerFactory/getLogger ~(.toString *ns*))))
 
 ;; # Logging macros
 ;;
@@ -43,12 +42,12 @@ smbh.log.core
 (defmacro log-c
   ([method ctx]
    (if (resolve '⠇⠕⠶⠻)
-     `(. ^Logger ~'⠇⠕⠶⠻
+     `(. ~'⠇⠕⠶⠻
          (~method (ClojureMapMarker. ~ctx) ""))
      (throw (IllegalStateException. "(deflogger) has not been called"))))
   ([method ctx msg]
    (if (resolve '⠇⠕⠶⠻)
-     `(. ^Logger ~'⠇⠕⠶⠻
+     `(. ~'⠇⠕⠶⠻
          (~method
            (ClojureMapMarker. ~ctx)
            ~msg))
@@ -56,22 +55,22 @@ smbh.log.core
   ([method ctx msg & args]
    (if (resolve '⠇⠕⠶⠻)
      (case (count args)
-       0 `(. ^Logger ~'⠇⠕⠶⠻
+       0 `(. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. ~ctx)
                ~msg))
-       1 `(. ^Logger ~'⠇⠕⠶⠻
+       1 `(. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. ~ctx)
                ~msg
-               ~(first args)))
-       2 `(. ^Logger ~'⠇⠕⠶⠻
+               (Identity/identity ~(first args))))
+       2 `(. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. ~ctx)
                ~msg
-               ~(first args)
-               ~(second args)))
-       `(. ^Logger ~'⠇⠕⠶⠻
+               (Identity/identity ~(first args))
+               (Identity/identity ~(second args))))
+       `(. ~'⠇⠕⠶⠻
            (~method
              (ClojureMapMarker. ~ctx)
              ~msg
@@ -81,19 +80,19 @@ smbh.log.core
 (defmacro log-m [method msg & args]
   (if (resolve '⠇⠕⠶⠻)
     (case (count args)
-      0 `(. ^Logger ~'⠇⠕⠶⠻
+      0 `(. ~'⠇⠕⠶⠻
             (~method
               ~msg))
-      1 `(. ^Logger ~'⠇⠕⠶⠻
+      1 `(. ~'⠇⠕⠶⠻
             (~method
               ~msg
-              ~(first args)))
-      2 `(. ^Logger ~'⠇⠕⠶⠻
+              (Identity/identity ~(first args))))
+      2 `(. ~'⠇⠕⠶⠻
             (~method
               ~msg
-              ~(first args)
-              ~(second args)))
-      `(. ^Logger ~'⠇⠕⠶⠻
+              (Identity/identity ~(first args))
+              (Identity/identity ~(second args))))
+      `(. ~'⠇⠕⠶⠻
           (~method
             ~msg
             (into-array Object [~@args]))))
@@ -101,37 +100,37 @@ smbh.log.core
 
 (defmacro log-e
   ([method e]
-   `(let [e#   (cast Throwable ~e)
+   `(let [e#   (Identity/throwable ~e)
           ctx# (ex-data e#)
-          msg# (.getMessage ^Exception e#)]
-      (log-c ~method ctx# msg# e#)))
+          msg# (.getMessage e#)]
+      (log-c ~method ctx# msg#)))
   ([method e msg]
    (if (resolve '⠇⠕⠶⠻)
-     `(let [e#     (cast Throwable ~e)
+     `(let [e#     (Identity/throwable ~e)
             e-ctx# (ex-data e#)]
         (if e-ctx#
-          (. ^Logger ~'⠇⠕⠶⠻
+          (. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. e-ctx#)
                ~msg
                ^Throwable e#))
-          (. ^Logger ~'⠇⠕⠶⠻
+          (. ~'⠇⠕⠶⠻
              (~method
                ~msg
                ^Throwable e#))))
      (throw (IllegalStateException. "(deflogger) has not been called"))))
   ([method e ctx msg]
    (if (resolve '⠇⠕⠶⠻)
-     `(let [e#     (cast Throwable ~e)
+     `(let [e#     (Identity/throwable ~e)
             e-ctx# (ex-data e#)
             ctx#   ~ctx]
         (if e-ctx#
-          (. ^Logger ~'⠇⠕⠶⠻
+          (. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. (into e-ctx# ctx#))
                ~msg
                ^Throwable e#))
-          (. ^Logger ~'⠇⠕⠶⠻
+          (. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. ctx#)
                ~msg

@@ -39,6 +39,16 @@ smbh.log.core
 ;; and return the evaluated value. The first argument is the keyword of the level 
 ;; (:info, :warn, etc...)
 
+(defn coerce-string [arg]
+  (if (instance? String arg)
+    arg
+    `(Identity/string ~arg)))
+
+(defn coerce-object [arg]
+  (if (some #(instance? % arg) [Long Double Integer])
+    `(Identity/identity ~arg)
+    arg))
+
 (defmacro log-c
   ([method ctx]
    (if (resolve '⠇⠕⠶⠻)
@@ -50,7 +60,7 @@ smbh.log.core
      `(. ~'⠇⠕⠶⠻
          (~method
            (ClojureMapMarker. ~ctx)
-           ~msg))
+           ~(coerce-string msg)))
      (throw (IllegalStateException. "(deflogger) has not been called"))))
   ([method ctx msg & args]
    (if (resolve '⠇⠕⠶⠻)
@@ -58,22 +68,22 @@ smbh.log.core
        0 `(. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. ~ctx)
-               ~msg))
+               ~(coerce-string msg)))
        1 `(. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. ~ctx)
-               ~msg
-               (Identity/identity ~(first args))))
+               ~(coerce-string msg)
+               ~(coerce-object (first args))))
        2 `(. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. ~ctx)
-               ~msg
-               (Identity/identity ~(first args))
-               (Identity/identity ~(second args))))
+               ~(coerce-string msg)
+               ~(coerce-object (first args))
+               ~(coerce-object (second args))))
        `(. ~'⠇⠕⠶⠻
            (~method
              (ClojureMapMarker. ~ctx)
-             ~msg
+             ~(coerce-string msg)
              (into-array Object [~@args]))))
      (throw (IllegalStateException. "(deflogger) has not been called")))))
 
@@ -85,16 +95,16 @@ smbh.log.core
               ~msg))
       1 `(. ~'⠇⠕⠶⠻
             (~method
-              ~msg
-              (Identity/identity ~(first args))))
+              ~(coerce-string msg)
+              ~(coerce-object (first args))))
       2 `(. ~'⠇⠕⠶⠻
             (~method
-              ~msg
-              (Identity/identity ~(first args))
-              (Identity/identity ~(second args))))
+              ~(coerce-string msg)
+              ~(coerce-object (first args))
+              ~(coerce-object (second args))))
       `(. ~'⠇⠕⠶⠻
           (~method
-            ~msg
+            ~(coerce-string msg)
             (into-array Object [~@args]))))
     (throw (IllegalStateException. "(deflogger) has not been called"))))
 
@@ -112,12 +122,12 @@ smbh.log.core
           (. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. e-ctx#)
-               ~msg
-               ^Throwable e#))
+               ~(coerce-string msg)
+               e#))
           (. ~'⠇⠕⠶⠻
              (~method
-               ~msg
-               ^Throwable e#))))
+               ~(coerce-string msg)
+               e#))))
      (throw (IllegalStateException. "(deflogger) has not been called"))))
   ([method e ctx msg]
    (if (resolve '⠇⠕⠶⠻)
@@ -128,12 +138,12 @@ smbh.log.core
           (. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. (into e-ctx# ctx#))
-               ~msg
+               ~(coerce-string msg)
                ^Throwable e#))
           (. ~'⠇⠕⠶⠻
              (~method
                (ClojureMapMarker. ctx#)
-               ~msg
+               ~(coerce-string msg)
                ^Throwable e#))))
      (throw (IllegalStateException. "(deflogger) has not been called")))))
 

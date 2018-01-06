@@ -11,6 +11,10 @@ public class Identity {
         return x;
     }
 
+    public static String string(String s) {
+        return s;
+    }
+
     public static Throwable throwable(Throwable t) {
         return t;
     }

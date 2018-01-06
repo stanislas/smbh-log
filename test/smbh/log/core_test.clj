@@ -15,7 +15,7 @@
   (is (not (log/trace-c {} (identity "hello"))))
   (is (not (log/trace-c {} (identity "hello {}") 1)))
   (is (not (log/trace-c {} (identity "hello {} {}") (+ 1 2) 3)))
-  (is (not (log/trace-c {} (identity "hello {} {} {}") 1 3 5)))
+  (is (not (log/trace-c {} (identity "hello {} {} {}") (+ 1 2) 3 5)))
 
   (is (not (log/trace-m (identity "hello"))))
   (is (not (log/trace-m (identity "hello {}") 1)))

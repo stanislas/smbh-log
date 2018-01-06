@@ -19,8 +19,12 @@ public class Identity {
         return t;
     }
 
-    public static Object[] array(Object[] a) {
-        return a;
+    public static Object[] makeArray(int length) {
+        return new Object[length];
+    }
+
+    public static void setArray(Object[] array, int i, Object value) {
+        array[i] = value;
     }
 
 }

@@ -49,6 +49,14 @@ smbh.log.core
     `(Identity/identity ~arg)
     arg))
 
+(defmacro create-array [args]
+  (let [array-sym (gensym)]
+    `(let [~array-sym (Identity/makeArray ~(count args))]
+       ~@(map-indexed (fn [i arg]
+                        `(Identity/setArray ~array-sym ~i ~(coerce-object arg)))
+                      args)
+       ~array-sym)))
+
 (defmacro log-c
   ([method ctx]
    (if (resolve '⠇⠕⠶⠻)
@@ -84,7 +92,7 @@ smbh.log.core
            (~method
              (ClojureMapMarker. ~ctx)
              ~(coerce-string msg)
-             (Identity/array (into-array Object [~@args])))))
+             (create-array ~args))))
      (throw (IllegalStateException. "(deflogger) has not been called")))))
 
 (defmacro log-m [method msg & args]
@@ -105,7 +113,7 @@ smbh.log.core
       `(. ~'⠇⠕⠶⠻
           (~method
             ~(coerce-string msg)
-            (Identity/array (into-array Object [~@args])))))
+            (create-array ~args))))
     (throw (IllegalStateException. "(deflogger) has not been called"))))
 
 (defmacro log-e

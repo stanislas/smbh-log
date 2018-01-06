@@ -19,4 +19,8 @@ public class Identity {
         return t;
     }
 
+    public static Object[] array(Object[] a) {
+        return a;
+    }
+
 }

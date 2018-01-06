@@ -84,7 +84,7 @@ smbh.log.core
            (~method
              (ClojureMapMarker. ~ctx)
              ~(coerce-string msg)
-             (into-array Object [~@args]))))
+             (Identity/array (into-array Object [~@args])))))
      (throw (IllegalStateException. "(deflogger) has not been called")))))
 
 (defmacro log-m [method msg & args]
@@ -105,7 +105,7 @@ smbh.log.core
       `(. ~'⠇⠕⠶⠻
           (~method
             ~(coerce-string msg)
-            (into-array Object [~@args]))))
+            (Identity/array (into-array Object [~@args])))))
     (throw (IllegalStateException. "(deflogger) has not been called"))))
 
 (defmacro log-e

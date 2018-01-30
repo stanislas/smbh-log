@@ -119,9 +119,8 @@ smbh.log.core
 (defmacro log-e
   ([method e]
    `(let [e#   (Identity/throwable ~e)
-          ctx# (ex-data e#)
           msg# (.getMessage e#)]
-      (log-c ~method ctx# msg#)))
+      (log-e ~method e# msg#)))
   ([method e msg]
    (if (resolve '⠇⠕⠶⠻)
      `(let [e#     (Identity/throwable ~e)
